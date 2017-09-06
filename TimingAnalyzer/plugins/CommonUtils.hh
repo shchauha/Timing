@@ -52,28 +52,50 @@ namespace Config
   inline bool file_exists(const std::string & filename){std::fstream input(filename.c_str()); return (bool)input;}
 };
 
+//////////////////
+//              //
+// OOT TypeDefs //
+//              //
+//////////////////
+typedef std::tuple<std::size_t, std::size_t, double> triple;
+typedef std::vector<triple> triplevec;
+
 ////////////////////////
 //                    //
 // Object Definitions //
 //                    //
 ////////////////////////
 #include "FWCore/Framework/interface/ESHandle.h"
+#include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
+#include "DataFormats/PatCandidates/interface/Electron.h"
 
 namespace oot
 {
-  struct Photon
+  class Photon
   {
+  public: 
+    Photon(const pat::Photon & photon, const bool isOOT) : photon_(std::move(photon)), isOOT_(isOOT) {}
+    ~Photon() {}
+
+    const pat::Photon& photon() const {return photon_;}
+    bool isOOT() const {return isOOT_;}
+    float pt() const {return photon_.pt();}
+
+  private:
     pat::Photon photon_;
     bool isOOT_;
-
-    Photon(const pat::Photon & photon, const bool isOOT) : photon_(std::move(photon)), isOOT_(isOOT) {}
-    float pt() const {return photon_.pt();}
   };
 
   // sort by pt template
   const auto sortByPt = [](const auto& obj1, const auto& obj2) {return obj1.pt() > obj2.pt();};
+
+  // sort by closest to z-mass
+  inline bool minimizeByZmass(const triple& pair1, const triple& pair2)
+  {
+    return std::get<2>(pair1)<std::get<2>(pair2);
+  }
 
   void PrepJets(const edm::Handle<std::vector<pat::Jet> > & jetsH, 
 		std::vector<pat::Jet> & jets, const float jetpTmin = 0.f);
@@ -81,6 +103,12 @@ namespace oot
   void PrepPhotons(const edm::Handle<std::vector<pat::Photon> > & photonsH, 
 		   const edm::Handle<std::vector<pat::Photon> > & ootPhotonsH,
 		   std::vector<oot::Photon> & photons, const float phpTmin = 0.f);
+  void PrepElectrons(const edm::Handle<std::vector<pat::Electron> > & electronsH, 
+		     const edm::ValueMap<bool> & electronVetoIdMap, 
+		     const edm::ValueMap<bool> & electronLooseIdMap, 
+		     const edm::ValueMap<bool> & electronMediumIdMap, 
+		     const edm::ValueMap<bool> & electronTightIdMap, 
+		     std::vector<pat::Electron> & electrons);
   float GetChargedHadronEA(const float eta);
   float GetNeutralHadronEA(const float eta);
   float GetGammaEA(const float eta);

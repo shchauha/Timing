@@ -1,4 +1,4 @@
-#include "PhotonDump.h"
+#include "PhotonDump.hh"
 
 PhotonDump::PhotonDump(const edm::ParameterSet& iConfig): 
   // dR matching criteria
@@ -50,7 +50,7 @@ PhotonDump::PhotonDump(const edm::ParameterSet& iConfig):
   triggerEventToken   = consumes<trigger::TriggerEvent> (triggerEventTag);
 
   // read in from a stream the trigger paths for saving
-  if (file_exists(inputPaths))
+  if (Config::file_exists(inputPaths))
   {
     std::fstream pathStream;
     pathStream.open(inputPaths.c_str(),std::ios::in);
@@ -67,7 +67,7 @@ PhotonDump::PhotonDump(const edm::ParameterSet& iConfig):
   } // check to make sure text file exists
 
   // read in from a stream the hlt objects/labels to match to
-  if (file_exists(inputFilters))
+  if (Config::file_exists(inputFilters))
   {
     std::fstream filterStream;
     filterStream.open(inputFilters.c_str(),std::ios::in);
@@ -146,7 +146,7 @@ void PhotonDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
   // JETS
   edm::Handle<std::vector<pat::Jet> > jetsH;
   iEvent.getByToken(jetsToken, jetsH);
-  std::vector<pat::Jet> jets = *jetsH;
+  std::vector<pat::Jet> jets; jets.resize(jetsH->size());
 
   // PHOTONS + IDS
   edm::Handle<edm::ValueMap<bool> > photonLooseIdMapH;
@@ -192,7 +192,7 @@ void PhotonDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
   }
 
   // do some prepping of objects
-  PhotonDump::PrepJets(jetsH,jets);
+  oot::PrepJets(jetsH,jets,0.f);
   PhotonDump::PrepPhotons(photonsH,photonLooseIdMap,photonMediumIdMap,photonTightIdMap,photons);
 
   ///////////////////////////
@@ -745,9 +745,9 @@ void PhotonDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
       // ID-like variables
       phHoE   [iph] = phiter->hadronicOverEm(); // used in ID
       phr9    [iph] = phiter->r9();
-      phChgIso[iph] = std::max(phiter->chargedHadronIso() - (rho * PhotonDump::GetChargedHadronEA(sceta)),0.f);
-      phNeuIso[iph] = std::max(phiter->neutralHadronIso() - (rho * PhotonDump::GetNeutralHadronEA(sceta)),0.f);
-      phIso   [iph] = std::max(phiter->photonIso()        - (rho * PhotonDump::GetGammaEA        (sceta)),0.f);
+      phChgIso[iph] = std::max(phiter->chargedHadronIso() - (rho * oot::GetChargedHadronEA(sceta)),0.f);
+      phNeuIso[iph] = std::max(phiter->neutralHadronIso() - (rho * oot::GetNeutralHadronEA(sceta)),0.f);
+      phIso   [iph] = std::max(phiter->photonIso()        - (rho * oot::GetGammaEA        (sceta)),0.f);
 
       // cluster shape variables
       phsieie[iph] = phshape.sigmaIetaIeta;
@@ -842,14 +842,6 @@ void PhotonDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
   tree->Fill();      
 }    
 
-void PhotonDump::PrepJets(const edm::Handle<std::vector<pat::Jet> > & jetsH, std::vector<pat::Jet> & jets)
-{
-  if (jetsH.isValid()) // standard handle check
-  {
-    std::sort(jets.begin(),jets.end(),sortByJetPt);
-  }
-}  
-
 void PhotonDump::PrepPhotons(const edm::Handle<std::vector<pat::Photon> > & photonsH, 
 			     const edm::ValueMap<bool> & photonLooseIdMap, 
 			     const edm::ValueMap<bool> & photonMediumIdMap, 
@@ -890,7 +882,7 @@ void PhotonDump::PrepPhotons(const edm::Handle<std::vector<pat::Photon> > & phot
     }
     
     // now finally sort vector by pT
-    std::sort(photons.begin(),photons.end(),sortByPhotonPt);
+    std::sort(photons.begin(),photons.end(),oot::sortByPt);
   }
 }  
 
@@ -933,42 +925,6 @@ void PhotonDump::HLTToPATPhotonMatching(const int iph)
       }
     }
   }
-}
-
-float PhotonDump::GetChargedHadronEA(const float eta)
-{
-  if      (eta <  1.0)                  return 0.0360;
-  else if (eta >= 1.0   && eta < 1.479) return 0.0377;
-  else if (eta >= 1.479 && eta < 2.0  ) return 0.0306;
-  else if (eta >= 2.0   && eta < 2.2  ) return 0.0283;
-  else if (eta >= 2.2   && eta < 2.3  ) return 0.0254;
-  else if (eta >= 2.3   && eta < 2.4  ) return 0.0217;
-  else if (eta >= 2.4)                  return 0.0167;
-  else                                  return 0.;
-}
-
-float PhotonDump::GetNeutralHadronEA(const float eta) 
-{
-  if      (eta <  1.0)                  return 0.0597;
-  else if (eta >= 1.0   && eta < 1.479) return 0.0807;
-  else if (eta >= 1.479 && eta < 2.0  ) return 0.0629;
-  else if (eta >= 2.0   && eta < 2.2  ) return 0.0197;
-  else if (eta >= 2.2   && eta < 2.3  ) return 0.0184;
-  else if (eta >= 2.3   && eta < 2.4  ) return 0.0284;
-  else if (eta >= 2.4)                  return 0.0591;
-  else                                  return 0.;
-}
-
-float PhotonDump::GetGammaEA(const float eta) 
-{
-  if      (eta <  1.0)                  return 0.1210;
-  else if (eta >= 1.0   && eta < 1.479) return 0.1107;
-  else if (eta >= 1.479 && eta < 2.0  ) return 0.0699;
-  else if (eta >= 2.0   && eta < 2.2  ) return 0.1056;
-  else if (eta >= 2.2   && eta < 2.3  ) return 0.1457;
-  else if (eta >= 2.3   && eta < 2.4  ) return 0.1719;
-  else if (eta >= 2.4)                  return 0.1998;
-  else                                  return 0.;
 }
 
 int PhotonDump::PassHoE(const float eta, const float HoE)

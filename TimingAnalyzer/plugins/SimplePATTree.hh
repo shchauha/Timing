@@ -60,32 +60,13 @@
 #include "TPRegexp.h"
 
 // Common types
-#include "CommonTypes.h"
-
-struct PatPhoton
-{
-  pat::Photon photon;
-  bool isOOT_;
-};
-
-inline bool sortByJetPt(const pat::Jet & jet1, const pat::Jet & jet2)
-{
-  return jet1.pt()>jet2.pt();
-}
-
-inline bool sortByPhotonPt(const PatPhoton & ph1, const PatPhoton & ph2)
-{
-  return ph1.photon.pt()>ph2.photon.pt();
-}
+#include "CommonUtils.hh"
 
 class SimplePATTree : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns> 
 {
  public:
   explicit SimplePATTree(const edm::ParameterSet&);
   ~SimplePATTree();
-
-  void PrepJets(const edm::Handle<std::vector<pat::Jet> > & jetsH, std::vector<pat::Jet> & jets);
-  void PrepPhotons(const edm::Handle<std::vector<pat::Photon> > & photonsH, std::vector<PatPhoton> & photons, const bool isOOT);
 
   void InitializePVBranches();
   void InitializeMETBranches();
@@ -126,8 +107,8 @@ class SimplePATTree : public edm::one::EDAnalyzer<edm::one::SharedResources,edm:
   // photons
   const edm::InputTag photonsTag;
   edm::EDGetTokenT<std::vector<pat::Photon> > photonsToken;
-  const edm::InputTag ootphotonsTag;
-  edm::EDGetTokenT<std::vector<pat::Photon> > ootphotonsToken;
+  const edm::InputTag ootPhotonsTag;
+  edm::EDGetTokenT<std::vector<pat::Photon> > ootPhotonsToken;
 
   // ECAL RecHits
   const edm::InputTag recHitsEBTag;

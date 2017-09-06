@@ -1,4 +1,4 @@
-#include "HLTDump.h"
+#include "HLTDump.hh"
 
 HLTDump::HLTDump(const edm::ParameterSet& iConfig): 
   // cuts
@@ -131,12 +131,15 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   // PHOTONS
   edm::Handle<std::vector<pat::Photon> > photonsH;
   iEvent.getByToken(photonsToken, photonsH);
+  int phosize = photonsH->size();
 
   edm::Handle<std::vector<pat::Photon> > ootPhotonsH;
   if (not ootPhotonsToken.isUninitialized())
   {
     iEvent.getByToken(ootPhotonsToken, ootPhotonsH);
+    phosize += ootPhotonsH->size();
   }
+  std::vector<oot::Photon> photons; photons.reserve(phosize);
 
   // RecHits
   edm::Handle<edm::SortedCollection<EcalRecHit,edm::StrictWeakOrdering<EcalRecHit> > > recHitsEBH;
@@ -152,8 +155,6 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   // do some prepping of objects
   oot::PrepJets(jetsH,jets,jetpTmin);
-
-  std::vector<oot::Photon> photons;
   oot::PrepPhotons(photonsH,ootPhotonsH,photons,phpTmin);
 
   ///////////////////////////
@@ -314,35 +315,37 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     int iph = 0;
     for (std::vector<oot::Photon>::const_iterator phiter = photons.begin(); phiter != photons.end(); ++phiter) // loop over photon vector
     {
+      const pat::Photon& photon = phiter->photon();
+
       // from ootPhoton collection
-      phisOOT[iph] = phiter->isOOT_;
+      phisOOT[iph] = phiter->isOOT();
       
       // standard photon branches
-      phE  [iph] = phiter->photon_.energy();
-      phpt [iph] = phiter->photon_.pt();
-      phphi[iph] = phiter->photon_.phi();
-      pheta[iph] = phiter->photon_.eta();
+      phE  [iph] = photon.energy();
+      phpt [iph] = photon.pt();
+      phphi[iph] = photon.phi();
+      pheta[iph] = photon.eta();
 
       // check for HLT filter matches!
       HLTDump::HLTToPATPhotonMatching(iph);
 
       // super cluster from photon
-      const reco::SuperClusterRef& phsc = phiter->photon_.superCluster().isNonnull() ? phiter->photon_.superCluster() : phiter->photon_.parentSuperCluster();
+      const reco::SuperClusterRef& phsc = photon.superCluster().isNonnull() ? photon.superCluster() : photon.parentSuperCluster();
       phscE  [iph] = phsc->energy();
       phsceta[iph] = phsc->eta();
       phscphi[iph] = phsc->phi();
 
       // Shower Shape Objects
-      const reco::Photon::ShowerShape& phshape = phiter->photon_.full5x5_showerShapeVariables(); // phiter->photon_.showerShapeVariables();
+      const reco::Photon::ShowerShape& phshape = photon.full5x5_showerShapeVariables(); // photon.showerShapeVariables();
 
       // ID-like variables
-      phHOvE   [iph] = phiter->photon_.hadronicOverEm(); // ID
-      phHTowOvE[iph] = phiter->photon_.hadTowOverEm(); // close to trigger
-      phr9     [iph] = phiter->photon_.r9();
+      phHOvE   [iph] = photon.hadronicOverEm(); // ID
+      phHTowOvE[iph] = photon.hadTowOverEm(); // close to trigger
+      phr9     [iph] = photon.r9();
 
       // pseudo-track veto
-      phPixSeed[iph] = phiter->photon_.passElectronVeto();
-      phEleVeto[iph] = phiter->photon_.hasPixelSeed();
+      phPixSeed[iph] = photon.passElectronVeto();
+      phEleVeto[iph] = photon.hasPixelSeed();
 
       // cluster shape variables
       phsieie[iph] = phshape.sigmaIetaIeta;
@@ -351,16 +354,16 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       // PF Isolations
       const float sceta = std::abs(phsceta[iph]);
-      phChgIso[iph] = std::max(phiter->photon_.chargedHadronIso() - (rho * oot::GetChargedHadronEA(sceta)),0.f);
-      phNeuIso[iph] = std::max(phiter->photon_.neutralHadronIso() - (rho * oot::GetNeutralHadronEA(sceta)),0.f);
-      phIso   [iph] = std::max(phiter->photon_.photonIso()        - (rho * oot::GetGammaEA        (sceta)),0.f);
+      phChgIso[iph] = std::max(photon.chargedHadronIso() - (rho * oot::GetChargedHadronEA(sceta)),0.f);
+      phNeuIso[iph] = std::max(photon.neutralHadronIso() - (rho * oot::GetNeutralHadronEA(sceta)),0.f);
+      phIso   [iph] = std::max(photon.photonIso()        - (rho * oot::GetGammaEA        (sceta)),0.f);
 
       // PF Cluster Isolations
-      phPFClEcalIso[iph] = phiter->photon_.ecalPFClusterIso();
-      phPFClHcalIso[iph] = phiter->photon_.hcalPFClusterIso();
+      phPFClEcalIso[iph] = photon.ecalPFClusterIso();
+      phPFClHcalIso[iph] = photon.hcalPFClusterIso();
 
       // Track Isolation (dR of outer cone < 0.3 as matching in trigger)
-      phHollowTkIso[iph] = phiter->photon_.trkSumPtHollowConeDR03();
+      phHollowTkIso[iph] = photon.trkSumPtHollowConeDR03();
      
       // use seed to get geometry and recHits
       const DetId seedDetId = phsc->seed()->seed(); //seed detid

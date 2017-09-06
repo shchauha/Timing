@@ -68,7 +68,7 @@
 #include "TPRegexp.h"
 
 // Common types
-#include "CommonTypes.h"
+#include "CommonUtils.hh"
 
 class HLTDump : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns> 
 {
