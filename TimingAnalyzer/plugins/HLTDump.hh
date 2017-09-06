@@ -1,3 +1,6 @@
+#ifndef __HLTDump__
+#define __HLTDump__
+
 // basic C++ headers
 #include <iostream>
 #include <fstream>
@@ -68,17 +71,13 @@
 #include "TPRegexp.h"
 
 // Common types
-#include "CommonUtils.hh"
+#include "Timing/TimingAnalyzer/plugins/CommonUtils.hh"
 
 class HLTDump : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns> 
 {
  public:
   explicit HLTDump(const edm::ParameterSet&);
   ~HLTDump();
-
-  void PrepTriggerObjects();
-  
-  void HLTToPATPhotonMatching(const int iph);
 
   void InitializeTriggerBranches();
   void ClearTriggerObjectBranches();
@@ -194,3 +193,5 @@ class HLTDump : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::
   // all rec hit info
   std::vector<int> phnrh;
 };
+
+#endif

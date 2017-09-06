@@ -1,3 +1,6 @@
+#ifndef __ZeeTree__
+#define __ZeeTree__
+
 // basic C++ headers
 #include <iostream>
 #include <memory>
@@ -8,8 +11,6 @@
 #include <cmath>
 #include <algorithm>
 #include <tuple>
-
-#include "CommonUtils.hh"
 
 // FWCore
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -52,6 +53,8 @@
 #include "TTree.h"
 #include "TLorentzVector.h"
 #include "TPRegexp.h"
+
+#include "Timing/TimingAnalyzer/plugins/CommonUtils.hh"
 
 class ZeeTree : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns> 
 {
@@ -156,3 +159,5 @@ private:
   float genel1E,genel1p,genel1pt,genel1eta,genel1phi;
   float genel2E,genel2p,genel2pt,genel2eta,genel2phi;
 };
+
+#endif

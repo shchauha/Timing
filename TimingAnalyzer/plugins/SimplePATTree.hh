@@ -1,3 +1,6 @@
+#ifndef __SimplePATTree__
+#define __SimplePATTree__
+
 // basic C++ headers
 #include <iostream>
 #include <fstream>
@@ -60,7 +63,7 @@
 #include "TPRegexp.h"
 
 // Common types
-#include "CommonUtils.hh"
+#include "Timing/TimingAnalyzer/plugins/CommonUtils.hh"
 
 class SimplePATTree : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns> 
 {
@@ -153,3 +156,5 @@ class SimplePATTree : public edm::one::EDAnalyzer<edm::one::SharedResources,edm:
   std::vector<float> phseedE, phseedtime;
   std::vector<int>   phseedOOT;
 };
+
+#endif

@@ -1,4 +1,4 @@
-#include "ZeeTnPTree.hh"
+#include "Timing/TimingAnalyzer/plugins/ZeeTnPTree.hh"
 
 ZeeTnPTree::ZeeTnPTree(const edm::ParameterSet& iConfig): 
   // triggers

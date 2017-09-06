@@ -1,4 +1,4 @@
-#include "SimplePATTree.hh"
+#include "Timing/TimingAnalyzer/plugins/SimplePATTree.hh"
 #include "FWCore/Utilities/interface/isFinite.h"
 
 SimplePATTree::SimplePATTree(const edm::ParameterSet& iConfig): 

@@ -1,4 +1,4 @@
-#include "HLTDump.hh"
+#include "Timing/TimingAnalyzer/plugins/HLTDump.hh"
 
 HLTDump::HLTDump(const edm::ParameterSet& iConfig): 
   // cuts
@@ -43,37 +43,11 @@ HLTDump::HLTDump(const edm::ParameterSet& iConfig):
   triggerResultsToken = consumes<edm::TriggerResults> (triggerResultsTag);
   triggerObjectsToken = consumes<std::vector<pat::TriggerObjectStandAlone> > (triggerObjectsTag);
 
-  //  read in from a stream the trigger paths for saving
-  if (Config::file_exists(inputPaths))
-  {
-    std::fstream pathStream;
-    pathStream.open(inputPaths.c_str(),std::ios::in);
-    std::string path;
-    while (pathStream >> path)
-    {
-      if (path != "") pathNames.push_back(path);
-    }
-    pathStream.close();
-
-    // branch to store trigger info
-    triggerBits.resize(pathNames.size());
-  } // check to make sure text file exists
+  // read in from a stream the trigger paths for saving
+  oot::ReadInTriggerNames(inputPaths,pathNames,triggerBits);
 
   // read in from a stream the hlt objects/labels to match to
-  if (Config::file_exists(inputFilters))
-  {
-    std::fstream filterStream;
-    filterStream.open(inputFilters.c_str(),std::ios::in);
-    std::string label;// instance, processName;
-    while (filterStream >> label)
-    {
-      if (label != "") filterNames.push_back(label);
-    }
-    filterStream.close();
-
-    // vector of vector of trigger objects
-    triggerObjectsByFilter.resize(filterNames.size());
-  } // check to make sure text file exists
+  oot::ReadInFilterNames(inputFilters,filterNames,triggerObjectsByFilter);
 
   //vertex
   verticesToken = consumes<std::vector<reco::Vertex> > (verticesTag);
@@ -117,7 +91,6 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   edm::Handle<std::vector<pat::TriggerObjectStandAlone> > triggerObjectsH;
   iEvent.getByToken(triggerObjectsToken, triggerObjectsH);
-  std::vector<pat::TriggerObjectStandAlone> triggerObjects = *triggerObjectsH;
 
   // MET
   edm::Handle<std::vector<pat::MET> > metsH;
@@ -205,20 +178,6 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	if (triggerName.Contains(pathNames[ipath],TString::kExact)) triggerBits[ipath] = triggerResultsH->accept(itrig);
       } // end loop over user path names
     } // end loop over trigger names
-
-    // store all the trigger objects needed to be checked later
-    if (triggerObjectsH.isValid())
-    {
-      for (pat::TriggerObjectStandAlone triggerObject : triggerObjects) 
-      {
-	triggerObject.unpackPathNames(triggerNames);
-	triggerObject.unpackFilterLabels(iEvent, *triggerResultsH);
-	for (std::size_t ifilter = 0; ifilter < filterNames.size(); ifilter++)
-	{	
-	  if (triggerObject.hasFilterLabel(filterNames[ifilter])) triggerObjectsByFilter[ifilter].push_back(triggerObject);
-	} // end loop over user filter names
-      } // end loop over trigger objects
-    } // end check over valid TriggerObjects
   } // end check over valid TriggerResults
 
   /////////////////
@@ -226,7 +185,7 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   // HLT Objects //
   //             //
   /////////////////
-  HLTDump::PrepTriggerObjects();
+  oot::PrepTriggerObjects(triggerResultsH,triggerObjectsH,iEvent,filterNames,triggerObjectsByFilter);
 
   if (saveTrigObjs) 
   {
@@ -327,7 +286,7 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       pheta[iph] = photon.eta();
 
       // check for HLT filter matches!
-      HLTDump::HLTToPATPhotonMatching(iph);
+      oot::HLTToObjectMatching(triggerObjectsByFilter,phIsHLTMatched,*phiter,iph,pTres,dRmin);
 
       // super cluster from photon
       const reco::SuperClusterRef& phsc = photon.superCluster().isNonnull() ? photon.superCluster() : photon.parentSuperCluster();
@@ -422,32 +381,6 @@ void HLTDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   ///////////////
   tree->Fill();      
 }    
-
-void HLTDump::PrepTriggerObjects()
-{
-  for (auto& triggerObjects : triggerObjectsByFilter)
-  {
-    std::sort(triggerObjects.begin(),triggerObjects.end(),oot::sortByPt);
-  }
-}
-
-void HLTDump::HLTToPATPhotonMatching(const int iph)
-{
-  for (std::size_t ifilter = 0; ifilter < triggerObjectsByFilter.size(); ifilter++)
-  {
-    for (std::size_t iobject = 0; iobject < triggerObjectsByFilter[ifilter].size(); iobject++)
-    {
-      const pat::TriggerObjectStandAlone & triggerObject = triggerObjectsByFilter[ifilter][iobject];
-      if (std::abs(triggerObject.pt()-phpt[iph])/phpt[iph] < pTres)
-      {
-	if (Config::deltaR(phphi[iph],pheta[iph],triggerObject.phi(),triggerObject.eta()) < dRmin)
-	{
-	  phIsHLTMatched[iph][ifilter] = true;
-	}
-      }
-    }
-  }
-}
 
 void HLTDump::InitializeTriggerBranches()
 {

@@ -1,3 +1,6 @@
+#ifndef __ZeeTnPTree__
+#define __ZeeTnPTree__
+
 // basic C++ headers
 #include <iostream>
 #include <memory>
@@ -8,8 +11,6 @@
 #include <cmath>
 #include <algorithm>
 #include <tuple>
-
-#include "CommonUtils.hh"
 
 // FWCore
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -52,6 +53,8 @@
 #include "TTree.h"
 #include "TLorentzVector.h"
 #include "TPRegexp.h"
+
+#include "Timing/TimingAnalyzer/plugins/CommonUtils.hh"
 
 class ZeeTnPTree : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns> 
 {
@@ -130,3 +133,5 @@ private:
   // dielectron info
   float zpt,zeta,zphi,zmass,zE,zp;
 };
+
+#endif

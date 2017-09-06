@@ -1,3 +1,6 @@
+#ifndef __PhotonDump__
+#define __PhotonDump__
+
 // basic C++ headers
 #include <iostream>
 #include <fstream>
@@ -25,7 +28,6 @@
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
-#include "DataFormats/HLTReco/interface/TriggerEvent.h"
 #include "DataFormats/HLTReco/interface/TriggerObject.h"
 
 // Gen Info
@@ -73,12 +75,7 @@
 #include "TPRegexp.h"
 
 // Common types
-#include "CommonUtils.hh"
-
-inline bool sortByGenParticlePt(const reco::GenParticle & gp1, const reco::GenParticle & gp2)
-{
-  return gp1.pt()>gp2.pt();
-}
+#include "Timing/TimingAnalyzer/plugins/CommonUtils.hh"
 
 class PhotonDump : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns> 
 {
@@ -86,28 +83,12 @@ class PhotonDump : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::on
   explicit PhotonDump(const edm::ParameterSet&);
   ~PhotonDump();
 
-  void PrepJets(const edm::Handle<std::vector<pat::Jet> > & jetsH, std::vector<pat::Jet> & jets);
-
   void PrepPhotons(const edm::Handle<std::vector<pat::Photon> > & photonsH, 
 		   const edm::ValueMap<bool> & photonLooseIdMap, 
 		   const edm::ValueMap<bool> & photonMediumIdMap, 
 		   const edm::ValueMap<bool> & photonTightIdMap, 
 		   std::vector<pat::Photon> & photons);
 
-  bool GenToPATPhotonMatching(const int, const edm::Handle<std::vector<reco::GenParticle> > & genparticlesH);
-  void HLTToPATPhotonMatching(const int);
-
-  float GetChargedHadronEA(const float);
-  float GetNeutralHadronEA(const float);
-  float GetGammaEA        (const float);
-
-  int PassHoE   (const float eta, const float HoE);
-  int PassSieie (const float eta, const float Sieie);
-  int PassChgIso(const float eta, const float ChgIso);
-  int PassNeuIso(const float eta, const float NeuIso, const float pt);
-  int PassPhIso (const float eta, const float PhIso,  const float pt);
-
-  void DumpTriggerMenu(const HLTConfigProvider& hltConfig, const std::vector<std::string>& pathNames, edm::Run const& iRun);
   void InitializeTriggerBranches();
 
   void InitializeGenEvtBranches();
@@ -152,17 +133,15 @@ class PhotonDump : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::on
   const float pTres;
 
   // triggers
-  const bool dumpTriggerMenu;
   const std::string inputPaths;
   std::vector<std::string> pathNames;
-  std::map<std::string,int> pathIndex;
   const std::string inputFilters;
-  std::vector<edm::InputTag> filterTags;
+  std::vector<std::string> filterNames;
   const edm::InputTag triggerResultsTag;
   edm::EDGetTokenT<edm::TriggerResults> triggerResultsToken;
-  const edm::InputTag triggerEventTag;
-  edm::EDGetTokenT<trigger::TriggerEvent> triggerEventToken;
-  std::vector<std::vector<trigger::TriggerObject> > triggerObjectsByFilter; // first index is filter label, second is trigger objects
+  const edm::InputTag triggerObjectsTag;
+  edm::EDGetTokenT<std::vector<pat::TriggerObjectStandAlone> > triggerObjectsToken;
+  std::vector<std::vector<pat::TriggerObjectStandAlone> > triggerObjectsByFilter; // first index is filter label, second is trigger objects
 
   // vertices
   const edm::InputTag verticesTag;
@@ -293,3 +272,5 @@ class PhotonDump : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::on
   std::vector<std::vector<int> > phrhID;
   std::vector<std::vector<int> > phrhOOT;
 };
+
+#endif
